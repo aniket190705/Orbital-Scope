@@ -34,7 +34,6 @@ OrbitalScope is an interactive web application that displays real-time satellite
 
 2. **Install Dependencies**
 npm install
-bash
 
 4. Add Your Cesium API Key
 - Create a .env file in the root directory:
