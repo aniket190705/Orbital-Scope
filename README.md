@@ -1,5 +1,7 @@
 # 🛰️ OrbitalScope - Real-time Satellite Tracker with CesiumJS
 
+🔗 **Live Demo:** [Click here to view the deployed app](https://orbital-scope-git-main-aniket190705s-projects.vercel.app/)
+
 OrbitalScope is an interactive web application that displays real-time satellite positions on a 3D Cesium globe using live TLE data. It also shows the satellite's altitude, speed, latitude, longitude, and visual trail path.
 
 ## 🚀 Features
