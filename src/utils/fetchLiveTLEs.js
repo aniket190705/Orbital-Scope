@@ -25,10 +25,12 @@ const fetchLiveTLEs = async (
 
             if (lines.length >= 3) {
                 tleData.push({
+                    id: lines[1].split(" ")[1]?.trim(), // Extract NORAD ID from TLE1
                     name: lines[0],
                     tle1: lines[1],
                     tle2: lines[2],
                 });
+
             } else {
                 console.warn(`Unexpected TLE format for ID ${id}:`, lines);
             }

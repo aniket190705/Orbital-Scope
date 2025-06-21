@@ -11,35 +11,33 @@ const SatelliteSidebar = ({
   flyToSatellite,
   currentlyTrackedId,
   setCurrentlyTrackedId,
+  allSatellites,
+  liveData,
 }) => {
-  const [expandedSatelliteId, setExpandedSatelliteId] = useState(null);
-  const [visibleSatellites, setVisibleSatellites] = useState([]); // All fetched satellites
-  const [liveInfo, setLiveInfo] = useState({}); // key: tle1, value: { lat, lon, alt, speed }
+  const [visibleSatellites, setVisibleSatellites] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+  const [liveInfo, setLiveInfo] = useState({});
 
-  // Fetch all satellites once on mount
   useEffect(() => {
-    const loadSatellites = async () => {
-      const sats = await fetchLiveTLEs();
-      setVisibleSatellites(
-        sats.map((sat) => ({
-          ...sat,
-          id: sat.tle1?.split(" ")[1]?.trim()?.slice(0, -1), // extract NORAD ID
-        }))
-      );
+    const load = async () => {
+      const fetched = await fetchLiveTLEs();
+      const withIds = fetched.map((sat) => ({
+        ...sat,
+        id: sat.tle1?.split(" ")[1]?.trim().slice(0, -1), // NORAD ID
+      }));
+      setVisibleSatellites(withIds);
     };
-    loadSatellites();
+    load();
   }, []);
 
-  // Live data update
   useEffect(() => {
     const interval = setInterval(() => {
-      const updated = {};
-
+      const updates = {};
       visibleSatellites.forEach((sat) => {
         try {
-          const satrec = satellite.twoline2satrec(sat.tle1, sat.tle2);
+          const rec = satellite.twoline2satrec(sat.tle1, sat.tle2);
           const now = new Date();
-          const { position, velocity } = satellite.propagate(satrec, now);
+          const { position, velocity } = satellite.propagate(rec, now);
           const gmst = satellite.gstime(now);
           const geo = satellite.eciToGeodetic(position, gmst);
 
@@ -48,29 +46,28 @@ const SatelliteSidebar = ({
           const alt = (geo.height * 1000).toFixed(0);
           const speed =
             Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) *
-            60 *
-            60;
+            3600; // km/h
 
-          updated[sat.id] = {
+          updates[sat.id] = {
             lat,
             lon,
             alt,
             speed: speed.toFixed(0),
           };
-        } catch (err) {
-          console.error("Live tracking error:", err);
-        }
+        } catch (e) {}
       });
-
-      setLiveInfo(updated);
-    }, 3000);
-
+      setLiveInfo(updates);
+    }, 1500);
     return () => clearInterval(interval);
   }, [visibleSatellites]);
 
-  const toggleExpand = (id, e) => {
-    e.stopPropagation();
-    setExpandedSatelliteId((prev) => (prev === id ? null : id));
+  const toggleSatellite = (sat) => {
+    const exists = selectedSatellites.find((s) => s.id === sat.id);
+    if (exists) {
+      setSelectedSatellites((prev) => prev.filter((s) => s.id !== sat.id));
+    } else {
+      setSelectedSatellites((prev) => [...prev, sat]);
+    }
   };
 
   if (!isOpen) return null;
@@ -85,8 +82,7 @@ const SatelliteSidebar = ({
         height: "100%",
         backgroundColor: "#1e1e1e",
         color: "#fff",
-        overflowY: "scroll",
-        boxShadow: "0 0 10px rgba(0, 0,0, 0.5)",
+        overflowY: "auto",
         padding: "16px",
         zIndex: 1000,
       }}
@@ -113,23 +109,15 @@ const SatelliteSidebar = ({
       </h3>
 
       {visibleSatellites.map((sat) => {
-        const isSelected = selectedSatellites.some((s) => s.tle1 === sat.tle1);
+        const selected = selectedSatellites.some((s) => s.id === sat.id);
         const live = liveInfo[sat.id] || {};
 
         return (
           <div
             key={sat.id}
-            onClick={() =>
-              setSelectedSatellites((prev) =>
-                isSelected
-                  ? prev.filter((s) => s.tle1 !== sat.tle1)
-                  : [...prev, sat]
-              )
-            }
+            onClick={() => toggleSatellite(sat)}
             style={{
-              border: isSelected
-                ? "2px solid #00bcd4"
-                : "2px solid transparent",
+              border: selected ? "2px solid #00bcd4" : "2px solid transparent",
               borderRadius: "8px",
               padding: "10px",
               marginBottom: "10px",
@@ -140,20 +128,23 @@ const SatelliteSidebar = ({
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <h4 style={{ margin: 0 }}>{sat.name?.trim()}</h4>
               <button
-                onClick={(e) => toggleExpand(sat.id, e)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedId((prev) => (prev === sat.id ? null : sat.id));
+                }}
                 style={{
                   background: "none",
                   border: "none",
                   color: "#00bcd4",
-                  cursor: "pointer",
                   fontSize: "16px",
+                  cursor: "pointer",
                 }}
               >
-                {expandedSatelliteId === sat.id ? "▲" : "▼"}
+                {expandedId === sat.id ? "▲" : "▼"}
               </button>
             </div>
 
-            {expandedSatelliteId === sat.id && (
+            {expandedId === sat.id && (
               <div style={{ marginTop: "10px", fontSize: "13px" }}>
                 <p>
                   <strong>Altitude:</strong> {live.alt || "Loading..."} m
@@ -167,16 +158,10 @@ const SatelliteSidebar = ({
                 <p>
                   <strong>Longitude:</strong> {live.lon || "Loading..."}°
                 </p>
-
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (currentlyTrackedId === sat.id) {
-                      setCurrentlyTrackedId(null);
-                    } else {
-                      flyToSatellite(sat.id);
-                      setCurrentlyTrackedId(sat.id);
-                    }
+                    flyToSatellite(sat.id);
                   }}
                   style={{
                     marginTop: "8px",

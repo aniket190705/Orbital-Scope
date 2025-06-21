@@ -88,7 +88,7 @@ const SatelliteTracker = ({ viewer, selectedSatellites }) => {
         entity.label.text = `${sat.name.trim()}\nAlt: ${alt.toFixed(
           0
         )} m\nSpeed: ${spd.toFixed(0)} km/h`;
-      }, 3000);
+      }, 1500);
 
       entities.push({ entity, interval });
     });
