@@ -1,12 +1,56 @@
-# React + Vite
+# 🛰️ OrbitalScope - Real-time Satellite Tracker with CesiumJS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+OrbitalScope is an interactive web application that displays real-time satellite positions on a 3D Cesium globe using live TLE data. It also shows the satellite's altitude, speed, latitude, longitude, and visual trail path.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🌍 3D visualization of satellites in orbit using CesiumJS
+- 📡 Live satellite data using `satellite.js` and TLE updates from Celestrak
+- 🎯 Focus and track satellites with smooth camera movement
+- 📈 Real-time updates of:
+  - Altitude
+  - Speed
+  - Latitude & Longitude
+- 🔁 Satellite orbital trail visualization (past 90 mins)
+- 📰 News section with live articles related to satellite launches
+- 📋 Sidebar to select/deselect satellites and view details
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ⚙️ Tech Stack
+
+- 🖥️ **Frontend:** React.js, Vite
+- 🌌 **3D Engine:** CesiumJS
+- 📦 **Satellite Data:** `satellite.js`, Celestrak TLE feeds
+- 📰 **News API:** [Optional] Any public space news API (e.g., GNews, Spaceflight News)
+
+---
+
+## 🔧 Installation & Setup
+
+1. **Clone the repository**
+- git clone https://github.com/your-username/orbitalscope.git
+- cd orbitalscope
+
+2. **Install Dependencies**
+npm install
+bash
+
+4. Add Your Cesium API Key
+- Create a .env file in the root directory:
+- VITE_CESIUM_API_KEY=your_cesium_ion_token_here
+- Get your token from: https://cesium.com/ion
+
+4. Run the App
+- npm run dev
+- The app will be available at http://localhost:5173 (or similar).
+
+🔌 Data Sources
+-TLE Data: Celestrak GP
+-News API : Spaceflight News
+
+🛠️ Built With
+- React + Vite
+- CesiumJS
+- satellite.js
+- JavaScript (ES6+)
