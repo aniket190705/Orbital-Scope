@@ -1,25 +1,43 @@
-// fetchLiveTLEs.js
-const fetchLiveTLEs = async (noradIds = []) => {
+// utils/fetchLiveTLEs.js
+const fetchLiveTLEs = async (
+    noradIds = [
+        "25544", // ISS
+        "20580", // Hubble
+        "43013", // NOAA-20
+        "44714", // Starlink
+        "25994",
+        "40697",
+        "49260",
+        "28129",
+        "37846",
+    ]
+) => {
     const baseUrl = "https://celestrak.org/NORAD/elements/gp.php";
     const tleData = [];
 
     for (const id of noradIds) {
+        if (!id || typeof id !== "string") continue;
+
         try {
-            const res = await fetch(`${baseUrl}?CATNR=${id}&FORMAT=JSON`);
-            const [sat] = await res.json();
-            if (sat && sat.TLE_LINE1 && sat.TLE_LINE2) {
+            const res = await fetch(`${baseUrl}?CATNR=${id}&FORMAT=TLE`);
+            const text = await res.text();
+            const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+
+            if (lines.length >= 3) {
                 tleData.push({
-                    id: sat.NORAD_CAT_ID.toString(),
-                    name: sat.OBJECT_NAME,
-                    tle1: sat.TLE_LINE1.trim(),
-                    tle2: sat.TLE_LINE2.trim(),
+                    name: lines[0],
+                    tle1: lines[1],
+                    tle2: lines[2],
                 });
+            } else {
+                console.warn(`Unexpected TLE format for ID ${id}:`, lines);
             }
         } catch (err) {
             console.error(`Failed to fetch TLE for ${id}:`, err);
         }
     }
 
+    console.log("Fetched TLE Data:", tleData);
     return tleData;
 };
 

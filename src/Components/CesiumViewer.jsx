@@ -16,9 +16,16 @@ Ion.defaultAccessToken =
 const CesiumViewer = () => {
   const viewerRef = useRef(null);
   const [viewerInstance, setViewerInstance] = useState(null);
-  const [selectedSatellites, setSelectedSatellites] = useState(["25544"]);
+  const [selectedSatellites, setSelectedSatellites] = useState([
+    {
+      name: "ISS (ZARYA)",
+      tle1: "1 25544U 98067A   25171.80882408  .00010734  00000+0  19478-3 0  9990",
+      tle2: "2 25544  51.6358 289.1269 0002114 264.7605  95.3143 15.50148846515722",
+    },
+  ]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentlyTrackedId, setCurrentlyTrackedId] = useState(null);
+  const [liveData, setLiveData] = useState({});
 
   const flyToSatellite = (satId) => {
     const entity = viewerInstance?.entities.getById(satId);
@@ -100,6 +107,7 @@ const CesiumViewer = () => {
         flyToSatellite={flyToSatellite}
         currentlyTrackedId={currentlyTrackedId}
         setCurrentlyTrackedId={setCurrentlyTrackedId}
+        liveData={liveData}
       />
 
       {/* Cesium Globe Viewer */}
@@ -110,6 +118,7 @@ const CesiumViewer = () => {
         <SatelliteTracker
           viewer={viewerInstance}
           selectedSatellites={selectedSatellites}
+          setLiveData={setLiveData}
         />
       )}
     </div>
