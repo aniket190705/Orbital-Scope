@@ -22,7 +22,7 @@ OrbitalScope is an interactive web application that displays real-time satellite
 - 🖥️ **Frontend:** React.js, Vite
 - 🌌 **3D Engine:** CesiumJS
 - 📦 **Satellite Data:** `satellite.js`, Celestrak TLE feeds
-- 📰 **News API:** [Optional] Any public space news API (e.g., GNews, Spaceflight News)
+- 📰 **News API:** Spaceflight News
 
 ---
 
@@ -45,12 +45,5 @@ bash
 - npm run dev
 - The app will be available at http://localhost:5173 (or similar).
 
-🔌 Data Sources
--TLE Data: Celestrak GP
--News API : Spaceflight News
 
-🛠️ Built With
-- React + Vite
-- CesiumJS
-- satellite.js
-- JavaScript (ES6+)
+
