@@ -147,7 +147,8 @@ const SatelliteSidebar = ({
             {expandedId === sat.id && (
               <div style={{ marginTop: "10px", fontSize: "13px" }}>
                 <p>
-                  <strong>Altitude:</strong> {live.alt || "Loading..."} m
+                  <strong>Altitude:</strong> {live.alt / 1000 || "Loading..."}{" "}
+                  km
                 </p>
                 <p>
                   <strong>Speed:</strong> {live.speed || "Loading..."} km/h

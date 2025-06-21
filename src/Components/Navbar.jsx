@@ -9,16 +9,10 @@ function Navbar() {
       </Link>
       <div className="space-x-4">
         <Link to="/" className="hover:underline">
-          Home
+          Track Satellites
         </Link>
-        <Link to="/dashboard" className="hover:underline">
-          Dashboard
-        </Link>
-        <Link to="/login" className="hover:underline">
-          Login
-        </Link>
-        <Link to="/signup" className="hover:underline">
-          Signup
+        <Link to="/news" className="hover:underline">
+          News
         </Link>
       </div>
     </nav>

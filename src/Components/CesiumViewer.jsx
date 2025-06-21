@@ -12,8 +12,7 @@ import fetchLiveTLEs from "../utils/fetchLiveTLEs";
 import SatelliteTracker from "./SatelliteTracker";
 import SatelliteSidebar from "./SatelliteSidebar";
 
-Ion.defaultAccessToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2M2Q1OWRlMS1kOTM3LTQ4ZmUtYjk1OS1kOTU5ZGI4OTYzYjQiLCJpZCI6MzA3ODg3LCJpYXQiOjE3NDkwNDIwMDB9.k1CmcGmuoiCqIuRVF2QqMv1TQvzHkiERWFXcWNiawJQ";
+Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_API_KEY;
 
 const CesiumViewer = () => {
   const viewerRef = useRef(null);

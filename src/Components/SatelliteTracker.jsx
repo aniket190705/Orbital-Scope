@@ -1,94 +1,107 @@
 import { useEffect } from "react";
 import {
   Cartesian3,
-  ConstantPositionProperty,
   Color,
   LabelStyle,
   VerticalOrigin,
   Cartesian2,
+  SampledPositionProperty,
+  JulianDate,
 } from "cesium";
 import * as satellite from "satellite.js";
 
-const colorPalette = [
-  Color.RED,
-  Color.GREEN,
-  Color.YELLOW,
-  Color.CYAN,
-  Color.ORANGE,
-  Color.MAGENTA,
-  Color.BLUE,
-  Color.PINK,
-];
-
-const SatelliteTracker = ({ viewer, selectedSatellites }) => {
+const SatelliteTracker = ({ viewer, selectedSatellites, setLiveData }) => {
   useEffect(() => {
-    if (!viewer || selectedSatellites.length === 0) return;
+    if (!viewer) return;
 
     const entities = [];
 
-    selectedSatellites.forEach((sat, index) => {
-      if (!sat.tle1 || !sat.tle2) return;
-
+    selectedSatellites.forEach((sat) => {
+      const satId = sat.tle1.split(" ")[1]?.trim()?.slice(0, -1); // NORAD ID
       const satrec = satellite.twoline2satrec(sat.tle1, sat.tle2);
 
+      // Orbit path using SampledPositionProperty
+      const positionProperty = new SampledPositionProperty();
       const now = new Date();
-      const positionAndVelocity = satellite.propagate(satrec, now);
-      const gmst = satellite.gstime(now);
-      const posGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
+      const orbitDurationMin = 90;
+      const stepSeconds = 30;
 
-      const longitude = satellite.degreesLong(posGd.longitude);
-      const latitude = satellite.degreesLat(posGd.latitude);
-      const height = posGd.height * 1000; // meters
+      for (
+        let i = (-orbitDurationMin * 60) / 2;
+        i <= (orbitDurationMin * 60) / 2;
+        i += stepSeconds
+      ) {
+        const time = new Date(now.getTime() + i * 1000);
+        const { position } = satellite.propagate(satrec, time);
+        if (!position) continue;
 
-      const velocityEci = positionAndVelocity.velocity;
-      const speedKps = Math.sqrt(
-        velocityEci.x ** 2 + velocityEci.y ** 2 + velocityEci.z ** 2
-      ); // km/s
-      const speedKph = speedKps * 3600;
+        const gmst = satellite.gstime(time);
+        const posGd = satellite.eciToGeodetic(position, gmst);
 
+        const lon = satellite.degreesLong(posGd.longitude);
+        const lat = satellite.degreesLat(posGd.latitude);
+        const alt = posGd.height * 1000;
+
+        const julian = JulianDate.fromDate(time);
+        const cartesian = Cartesian3.fromDegrees(lon, lat, alt);
+        positionProperty.addSample(julian, cartesian);
+      }
+
+      // Create satellite entity
       const entity = viewer.entities.add({
-        id: sat.id || `sat-${index}`,
-        name: sat.name,
-        position: Cartesian3.fromDegrees(longitude, latitude, height),
+        id: satId,
+        name: sat.name.trim(),
+        position: positionProperty,
         point: {
           pixelSize: 10,
-          color: colorPalette[index % colorPalette.length],
+          color: Color.YELLOW,
         },
         label: {
-          text: `${sat.name.trim()}\nAlt: ${height.toFixed(
-            0
-          )} m\nSpeed: ${speedKph.toFixed(0)} km/h`,
-          font: "12pt monospace",
+          text: sat.name.trim(),
+          font: "13pt sans-serif",
           fillColor: Color.WHITE,
           style: LabelStyle.FILL_AND_OUTLINE,
           outlineWidth: 2,
           verticalOrigin: VerticalOrigin.BOTTOM,
           pixelOffset: new Cartesian2(0, -12),
+          showBackground: true,
+          backgroundColor: Color.BLACK.withAlpha(0.5),
+        },
+        path: {
+          show: true,
+          leadTime: 0,
+          trailTime: 5400, // 90 minutes
+          width: 2,
+          material: Color.CYAN.withAlpha(0.6),
         },
       });
 
-      // Interval for live update
+      // Update live position, speed, and label text
       const interval = setInterval(() => {
         const now = new Date();
-        const posVel = satellite.propagate(satrec, now);
+        const { position, velocity } = satellite.propagate(satrec, now);
+        if (!position || !velocity) return;
+
         const gmst = satellite.gstime(now);
-        const geo = satellite.eciToGeodetic(posVel.position, gmst);
+        const geo = satellite.eciToGeodetic(position, gmst);
 
-        const lon = satellite.degreesLong(geo.longitude);
-        const lat = satellite.degreesLat(geo.latitude);
-        const alt = geo.height * 1000;
+        const lat = satellite.degreesLat(geo.latitude).toFixed(2);
+        const lon = satellite.degreesLong(geo.longitude).toFixed(2);
+        const alt = (geo.height * 1000).toFixed(0) / 1000;
+        const speed =
+          Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) * 3600; // km/h
 
-        const vel = posVel.velocity;
-        const spd = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2) * 3600;
-
-        entity.position = new ConstantPositionProperty(
-          Cartesian3.fromDegrees(lon, lat, alt)
-        );
-
-        entity.label.text = `${sat.name.trim()}\nAlt: ${alt.toFixed(
+        // Update label text on the globe
+        entity.label.text = `${sat.name.trim()}\nAlt: ${alt} km \nSpeed: ${speed.toFixed(
           0
-        )} m\nSpeed: ${spd.toFixed(0)} km/h`;
-      }, 1500);
+        )} km/h`;
+
+        // Update external live data store (for sidebar)
+        setLiveData((prev) => ({
+          ...prev,
+          [satId]: { lat, lon, alt, speed: speed.toFixed(0) },
+        }));
+      }, 3000);
 
       entities.push({ entity, interval });
     });
@@ -99,7 +112,7 @@ const SatelliteTracker = ({ viewer, selectedSatellites }) => {
         clearInterval(interval);
       });
     };
-  }, [viewer, selectedSatellites]);
+  }, [viewer, selectedSatellites, setLiveData]);
 
   return null;
 };
