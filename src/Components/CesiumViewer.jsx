@@ -8,6 +8,8 @@ import {
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
+import { useAuth } from "../context/AuthContext";
+import { apiFetch } from "../utils/api";
 import fetchLiveTLEs from "../utils/fetchLiveTLEs";
 import SatelliteTracker from "./SatelliteTracker";
 import SatelliteSidebar from "./SatelliteSidebar";
@@ -15,6 +17,7 @@ import SatelliteSidebar from "./SatelliteSidebar";
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_API_KEY;
 
 const CesiumViewer = () => {
+  const { isAuthenticated } = useAuth();
   const viewerRef = useRef(null);
   const [viewerInstance, setViewerInstance] = useState(null);
   const [allSatellites, setAllSatellites] = useState([]);
@@ -22,37 +25,75 @@ const CesiumViewer = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentlyTrackedId, setCurrentlyTrackedId] = useState(null);
   const [liveData, setLiveData] = useState({});
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [favoritesError, setFavoritesError] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
+    let localViewer = null;
+
     const init = async () => {
       const terrain = await createWorldTerrainAsync();
-      const viewer = new Viewer(viewerRef.current, {
+      localViewer = new Viewer(viewerRef.current, {
         terrainProvider: terrain,
         shouldAnimate: true,
       });
-      setViewerInstance(viewer);
+
+      if (!isMounted) {
+        localViewer.destroy();
+        return;
+      }
+
+      setViewerInstance(localViewer);
 
       const satellites = await fetchLiveTLEs();
       const withIds = satellites.map((sat) => ({
         ...sat,
-        id: sat.tle1?.split(" ")[1]?.trim()?.slice(0, -1), // NORAD ID
+        id: sat.id ?? sat.tle1?.split(" ")[1]?.trim()?.slice(0, -1),
       }));
 
       setAllSatellites(withIds);
 
-      // Select ISS by default if present
-      const iss = withIds.find((s) => s.name?.includes("ISS"));
-      if (iss) setSelectedSatellites([iss]);
+      const iss = withIds.find((satellite) => satellite.name?.includes("ISS"));
+      if (iss) {
+        setSelectedSatellites([iss]);
+      }
     };
 
     init();
 
     return () => {
-      if (viewerInstance && !viewerInstance.isDestroyed()) {
-        viewerInstance.destroy();
+      isMounted = false;
+      if (localViewer && !localViewer.isDestroyed()) {
+        localViewer.destroy();
       }
     };
   }, []);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!isAuthenticated) {
+        setFavoriteIds([]);
+        setFavoritesError("");
+        return;
+      }
+
+      setFavoritesLoading(true);
+
+      try {
+        const payload = await apiFetch("/api/user/favorites");
+        setFavoriteIds((payload.data ?? []).map((favorite) => favorite.satelliteId));
+        setFavoritesError("");
+      } catch (error) {
+        setFavoritesError(error.message);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+
+    loadFavorites();
+  }, [isAuthenticated]);
 
   const flyToSatellite = (satId) => {
     const entity = viewerInstance?.entities.getById(satId);
@@ -74,6 +115,33 @@ const CesiumViewer = () => {
         500000
       ),
     });
+  };
+
+  const toggleFavorite = async (satId) => {
+    if (!isAuthenticated) {
+      setFavoritesError("Sign in with Google to save favorites.");
+      return;
+    }
+
+    const isFavorite = favoriteIds.includes(satId);
+
+    try {
+      if (isFavorite) {
+        await apiFetch(`/api/user/favorites/${satId}`, {
+          method: "DELETE",
+        });
+        setFavoriteIds((prev) => prev.filter((id) => id !== satId));
+      } else {
+        await apiFetch(`/api/user/favorites/${satId}`, {
+          method: "POST",
+        });
+        setFavoriteIds((prev) => [...prev, satId]);
+      }
+
+      setFavoritesError("");
+    } catch (error) {
+      setFavoritesError(error.message);
+    }
   };
 
   return (
@@ -112,9 +180,13 @@ const CesiumViewer = () => {
         setSelectedSatellites={setSelectedSatellites}
         flyToSatellite={flyToSatellite}
         currentlyTrackedId={currentlyTrackedId}
-        setCurrentlyTrackedId={setCurrentlyTrackedId}
         allSatellites={allSatellites}
         liveData={liveData}
+        favoriteIds={favoriteIds}
+        favoritesLoading={favoritesLoading}
+        favoritesError={favoritesError}
+        isAuthenticated={isAuthenticated}
+        onToggleFavorite={toggleFavorite}
       />
 
       <div ref={viewerRef} style={{ flex: 1, height: "107%" }} />

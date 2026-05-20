@@ -27,6 +27,11 @@ export default defineConfig({
       cesium: path.resolve(__dirname, 'node_modules/cesium'),
     },
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:4000',
+    },
+  },
   build: {
     rollupOptions: {
       external: [],

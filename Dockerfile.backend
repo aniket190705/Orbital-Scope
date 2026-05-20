@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app/server
+
+COPY server/package*.json ./
+RUN npm ci
+
+COPY server ./
+COPY prisma ../prisma
+
+ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/orbital_scope
+
+RUN node ./scripts/run-prisma.mjs generate --schema ../prisma/schema.prisma
+RUN chmod +x ./docker-entrypoint.sh
+
+EXPOSE 4000
+
+CMD ["./docker-entrypoint.sh"]

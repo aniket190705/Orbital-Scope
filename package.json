@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prisma:generate": "node ./server/scripts/run-prisma.mjs generate --schema prisma/schema.prisma",
+    "prisma:migrate": "node ./server/scripts/run-prisma.mjs migrate dev --schema prisma/schema.prisma"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "@cesium/engine": "^18.0.0",
     "@tailwindcss/vite": "^4.1.8",
     "cesium": "^1.130.0",
@@ -30,6 +33,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "prisma": "^6.19.3",
     "vite": "^6.3.5",
     "vite-plugin-cesium": "^1.2.23",
     "vite-plugin-static-copy": "^3.0.2"

@@ -1,0 +1,54 @@
+services:
+  frontend:
+    image: ${ECR_REGISTRY}/orbital-scope-frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    image: ${ECR_REGISTRY}/orbital-scope-backend:latest
+    env_file:
+      - ./server/.env
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      CLIENT_ORIGIN: http://${EC2_HOST}
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/orbital_scope
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: orbital_scope
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orbital_scope"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:

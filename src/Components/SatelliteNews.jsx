@@ -1,15 +1,20 @@
-// components/SatelliteNews.jsx
 import { useEffect, useState } from "react";
 import fetchSpaceNews from "../utils/fetchSpaceNews";
 
 const SatelliteNews = () => {
   const [articles, setArticles] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const loadNews = async () => {
-      const news = await fetchSpaceNews();
-      setArticles(news);
+      try {
+        const news = await fetchSpaceNews();
+        setArticles(news);
+      } catch (loadError) {
+        setError(loadError.message);
+      }
     };
+
     loadNews();
   }, []);
 
@@ -24,6 +29,12 @@ const SatelliteNews = () => {
         gap: "16px",
       }}
     >
+      {error && (
+        <div style={{ gridColumn: "1 / -1", color: "#fca5a5" }}>
+          Unable to load space news right now: {error}
+        </div>
+      )}
+
       {articles.map((article) => (
         <div
           key={article.id}

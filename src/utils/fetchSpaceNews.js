@@ -1,9 +1,11 @@
-// utils/fetchSpaceNews.js
 const fetchSpaceNews = async () => {
     const res = await fetch("https://api.spaceflightnewsapi.net/v4/articles?limit=25");
+
+    if (!res.ok) {
+        throw new Error(`News API responded with ${res.status}`);
+    }
+
     const data = await res.json();
-    console.log("Fetched Space News:", data.results);
-    return data.results;
+    return data.results ?? [];
 };
-fetchSpaceNews();
 export default fetchSpaceNews;

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FaCrosshairs } from "react-icons/fa";
-import fetchLiveTLEs from "../utils/fetchLiveTLEs";
 import * as satellite from "satellite.js";
 
 const SatelliteSidebar = ({
@@ -10,43 +9,37 @@ const SatelliteSidebar = ({
   setSelectedSatellites,
   flyToSatellite,
   currentlyTrackedId,
-  setCurrentlyTrackedId,
   allSatellites,
-  liveData,
+  favoriteIds,
+  favoritesLoading,
+  favoritesError,
+  isAuthenticated,
+  onToggleFavorite,
 }) => {
-  const [visibleSatellites, setVisibleSatellites] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [liveInfo, setLiveInfo] = useState({});
 
   useEffect(() => {
-    const load = async () => {
-      const fetched = await fetchLiveTLEs();
-      const withIds = fetched.map((sat) => ({
-        ...sat,
-        id: sat.tle1?.split(" ")[1]?.trim().slice(0, -1), // NORAD ID
-      }));
-      setVisibleSatellites(withIds);
-    };
-    load();
-  }, []);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       const updates = {};
-      visibleSatellites.forEach((sat) => {
+
+      allSatellites.forEach((sat) => {
         try {
           const rec = satellite.twoline2satrec(sat.tle1, sat.tle2);
           const now = new Date();
           const { position, velocity } = satellite.propagate(rec, now);
+
+          if (!position || !velocity) {
+            return;
+          }
+
           const gmst = satellite.gstime(now);
           const geo = satellite.eciToGeodetic(position, gmst);
-
           const lat = satellite.degreesLat(geo.latitude).toFixed(2);
           const lon = satellite.degreesLong(geo.longitude).toFixed(2);
           const alt = (geo.height * 1000).toFixed(0);
           const speed =
-            Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) *
-            3600; // km/h
+            Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) * 3600;
 
           updates[sat.id] = {
             lat,
@@ -54,20 +47,26 @@ const SatelliteSidebar = ({
             alt,
             speed: speed.toFixed(0),
           };
-        } catch (e) {}
+        } catch (error) {
+          // Ignore propagation failures for malformed or stale records.
+        }
       });
+
       setLiveInfo(updates);
     }, 1500);
+
     return () => clearInterval(interval);
-  }, [visibleSatellites]);
+  }, [allSatellites]);
 
   const toggleSatellite = (sat) => {
-    const exists = selectedSatellites.find((s) => s.id === sat.id);
+    const exists = selectedSatellites.find((selected) => selected.id === sat.id);
+
     if (exists) {
-      setSelectedSatellites((prev) => prev.filter((s) => s.id !== sat.id));
-    } else {
-      setSelectedSatellites((prev) => [...prev, sat]);
+      setSelectedSatellites((prev) => prev.filter((selected) => selected.id !== sat.id));
+      return;
     }
+
+    setSelectedSatellites((prev) => [...prev, sat]);
   };
 
   if (!isOpen) return null;
@@ -78,7 +77,7 @@ const SatelliteSidebar = ({
         position: "absolute",
         top: 0,
         left: 0,
-        width: "300px",
+        width: "320px",
         height: "100%",
         backgroundColor: "#1e1e1e",
         color: "#fff",
@@ -104,13 +103,35 @@ const SatelliteSidebar = ({
         Hide
       </button>
 
-      <h3 style={{ fontSize: "18px", marginBottom: "16px" }}>
-        Select Satellites
-      </h3>
+      <h3 style={{ fontSize: "18px", marginBottom: "16px" }}>Select Satellites</h3>
+      <div style={{ marginBottom: "12px", fontSize: "12px", color: "#9ca3af" }}>
+        {isAuthenticated
+          ? favoritesLoading
+            ? "Syncing favorites..."
+            : "Use the star to save satellites to your account."
+          : "Sign in to save favorite satellites."}
+      </div>
 
-      {visibleSatellites.map((sat) => {
-        const selected = selectedSatellites.some((s) => s.id === sat.id);
+      {favoritesError && (
+        <div
+          style={{
+            marginBottom: "12px",
+            padding: "10px",
+            borderRadius: "8px",
+            background: "rgba(239, 68, 68, 0.15)",
+            color: "#fecaca",
+            fontSize: "12px",
+          }}
+        >
+          {favoritesError}
+        </div>
+      )}
+
+      {allSatellites.map((sat) => {
+        const selected = selectedSatellites.some((candidate) => candidate.id === sat.id);
         const live = liveInfo[sat.id] || {};
+        const isFavorite = favoriteIds.includes(sat.id);
+        const altitudeKm = live.alt ? (Number(live.alt) / 1000).toFixed(2) : null;
 
         return (
           <div
@@ -125,30 +146,47 @@ const SatelliteSidebar = ({
               cursor: "pointer",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <h4 style={{ margin: 0 }}>{sat.name?.trim()}</h4>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpandedId((prev) => (prev === sat.id ? null : sat.id));
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#00bcd4",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
-              >
-                {expandedId === sat.id ? "▲" : "▼"}
-              </button>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+              <h4 style={{ margin: 0, flex: 1 }}>{sat.name?.trim()}</h4>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleFavorite(sat.id);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: isFavorite ? "#fbbf24" : "#94a3b8",
+                    fontSize: "16px",
+                    cursor: "pointer",
+                  }}
+                  title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  {isFavorite ? "★" : "☆"}
+                </button>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setExpandedId((prev) => (prev === sat.id ? null : sat.id));
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#00bcd4",
+                    fontSize: "16px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {expandedId === sat.id ? "▲" : "▼"}
+                </button>
+              </div>
             </div>
 
             {expandedId === sat.id && (
               <div style={{ marginTop: "10px", fontSize: "13px" }}>
                 <p>
-                  <strong>Altitude:</strong> {live.alt / 1000 || "Loading..."}{" "}
-                  km
+                  <strong>Altitude:</strong> {altitudeKm ?? "Loading..."} km
                 </p>
                 <p>
                   <strong>Speed:</strong> {live.speed || "Loading..."} km/h
@@ -160,8 +198,8 @@ const SatelliteSidebar = ({
                   <strong>Longitude:</strong> {live.lon || "Loading..."}°
                 </p>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     flyToSatellite(sat.id);
                   }}
                   style={{
@@ -178,9 +216,7 @@ const SatelliteSidebar = ({
                   }}
                 >
                   <FaCrosshairs />
-                  {currentlyTrackedId === sat.id
-                    ? "Stop Tracking"
-                    : "Focus on Satellite"}
+                  {currentlyTrackedId === sat.id ? "Stop Tracking" : "Focus on Satellite"}
                 </button>
               </div>
             )}
