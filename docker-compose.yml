@@ -3,9 +3,6 @@ services:
     image: ${ECR_REGISTRY}/orbital-scope-frontend:latest
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - /etc/ssl/orbital-scope:/etc/ssl/orbital-scope:ro
     depends_on:
       backend:
         condition: service_started
