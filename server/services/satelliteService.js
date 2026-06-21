@@ -88,25 +88,46 @@ async function fetchTleFromUpstream(id) {
   const url =
     `${env.CELESTRAK_BASE_URL}?CATNR=${id}&FORMAT=TLE`;
 
-  console.log("Fetching TLE:", url);
+  console.log(`Fetching TLE: ${url}`);
 
-  const response = await fetch(url);
+  const controller = new AbortController();
 
-  console.log("Response status:", response.status);
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 30000);
 
-  if (!response.ok) {
-    throw createHttpError(
-      response.status,
-      `Failed to fetch TLE data for NORAD ${id}`
-    );
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+    });
+
+
+    clearTimeout(timeout);
+
+    console.log(`Response status for ${id}: ${response.status}`);
+
+    if (!response.ok) {
+      throw createHttpError(
+        response.status,
+        `Failed to fetch TLE data for NORAD ${id}`
+      );
+    }
+
+    const rawText = await response.text();
+
+    console.log(`Received TLE for ${id}`);
+
+    return parseTleResponse(rawText, id);
+
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error(`Failed to fetch TLE for ${id}:`, error);
+    throw error;
+
+
   }
-
-  const rawText = await response.text();
-
-  console.log("Received TLE for:", id);
-
-  return parseTleResponse(rawText, id);
 }
+
 
 export async function getSatelliteById(id) {
   const normalizedId = normalizeNoradId(id);
