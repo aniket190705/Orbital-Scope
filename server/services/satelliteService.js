@@ -123,8 +123,20 @@ export async function getSatelliteById(id) {
 }
 
 export async function getDefaultSatellites() {
-  return Promise.all(DEFAULT_SATELLITE_IDS.map((id) => getSatelliteById(id)));
+  const satellites = [];
+
+  for (const id of DEFAULT_SATELLITE_IDS) {
+    try {
+      const satellite = await getSatelliteById(id);
+      satellites.push(satellite);
+    } catch (error) {
+      console.error(`Failed to fetch satellite ${id}:`, error);
+    }
+  }
+
+  return satellites;
 }
+
 
 export function createCustomSatelliteRecord(input) {
   const satrec = validateTlePair(input.tle1, input.tle2);
