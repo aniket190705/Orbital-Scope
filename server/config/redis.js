@@ -5,13 +5,13 @@ const memoryCache = new Map();
 
 export const redisClient = env.REDIS_URL
   ? createClient({
-      url: env.REDIS_URL,
-    })
+    url: env.REDIS_URL,
+  })
   : null;
 
 if (redisClient) {
   redisClient.on("error", (error) => {
-    console.error("Redis client error:", error.message);
+    console.error("Redis client error:", error);
   });
 }
 
@@ -24,7 +24,7 @@ export async function connectRedis() {
     await redisClient.connect();
     console.log("Redis cache connected.");
   } catch (error) {
-    console.error("Redis connection failed, falling back to in-memory cache:", error.message);
+    console.error("Redis connection failed, falling back to in-memory cache:", error);
   }
 }
 
