@@ -85,18 +85,26 @@ function parseTleResponse(rawText, requestedId) {
 }
 
 async function fetchTleFromUpstream(id) {
-  const response = await fetch(
-    `${env.CELESTRAK_BASE_URL}?CATNR=${id}&FORMAT=TLE`
-  );
+  const url =
+    `${env.CELESTRAK_BASE_URL}?CATNR=${id}&FORMAT=TLE`;
+
+  console.log("Fetching TLE:", url);
+
+  const response = await fetch(url);
+
+  console.log("Response status:", response.status);
 
   if (!response.ok) {
     throw createHttpError(
       response.status,
-      `Failed to fetch TLE data for NORAD ${id} from upstream provider.`
+      `Failed to fetch TLE data for NORAD ${id}`
     );
   }
 
   const rawText = await response.text();
+
+  console.log("Received TLE for:", id);
+
   return parseTleResponse(rawText, id);
 }
 
