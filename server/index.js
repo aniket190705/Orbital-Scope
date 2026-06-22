@@ -52,6 +52,8 @@ process.on("uncaughtException", (error) => {
   console.error("Uncaught exception:", error);
 });
 
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
 app.listen(env.PORT, () => {
   console.log(`Orbital Scope API listening on http://localhost:${env.PORT}`);
 });
