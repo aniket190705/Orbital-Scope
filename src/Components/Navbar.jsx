@@ -33,9 +33,12 @@ function Navbar() {
           </>
         ) : (
           <>
-            <Link to="/login" className="hover:underline">
+            <button
+              onClick={loginWithGoogle}
+              className="hover:underline"
+            >
               Login
-            </Link>
+            </button>
             <button
               onClick={loginWithGoogle}
               className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
