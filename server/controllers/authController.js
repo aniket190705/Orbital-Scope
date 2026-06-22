@@ -21,6 +21,12 @@ function serializeUser(user) {
   };
 }
 
+function buildFrontendAuthRedirect(token) {
+  const redirectUrl = new URL("/?auth=success", env.CLIENT_ORIGIN);
+  redirectUrl.searchParams.set("token", token);
+  return redirectUrl.toString();
+}
+
 export function startGoogleAuth(req, res, next) {
   if (!isGoogleAuthConfigured()) {
     return next(
@@ -62,8 +68,7 @@ export function completeGoogleAuth(req, res, next) {
     res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions);
 
     if (req.accepts(["html", "json"]) === "html") {
-      const redirectUrl = new URL("/?auth=success", env.CLIENT_ORIGIN);
-      return res.redirect(redirectUrl.toString());
+      return res.redirect(buildFrontendAuthRedirect(token));
     }
 
     return res.status(200).json({

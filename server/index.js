@@ -13,13 +13,26 @@ import userRoutes from "./routes/userRoutes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+const allowedOrigins = [
+  env.CLIENT_ORIGIN,
+  ...(env.CLIENT_ORIGINS
+    ? env.CLIENT_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : []),
+];
 
 configurePassport();
 await connectRedis();
 
+app.set("trust proxy", 1);
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
     credentials: true,
   })
 );

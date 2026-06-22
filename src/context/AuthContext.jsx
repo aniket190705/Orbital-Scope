@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { API_BASE_URL, apiFetch } from "../utils/api";
+import {
+  API_BASE_URL,
+  apiFetch,
+  getStoredAuthToken,
+  setStoredAuthToken,
+} from "../utils/api";
 
 const AuthContext = createContext(null);
 
@@ -20,6 +25,18 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tokenFromRedirect = searchParams.get("token");
+
+    if (tokenFromRedirect) {
+      setStoredAuthToken(tokenFromRedirect);
+      searchParams.delete("token");
+      searchParams.delete("auth");
+      const nextSearch = searchParams.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", nextUrl);
+    }
+
     refreshUser();
   }, []);
 
@@ -31,6 +48,7 @@ export function AuthProvider({ children }) {
     await apiFetch("/api/auth/logout", {
       method: "POST",
     });
+    setStoredAuthToken(null);
     setUser(null);
   };
 

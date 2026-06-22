@@ -7,6 +7,7 @@ const envSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development"),
   CLIENT_ORIGIN: z.string().url().default("http://localhost:5173"),
+  CLIENT_ORIGINS: z.string().optional(),
   DATABASE_URL: z.string().min(1).optional(),
   REDIS_URL: z.string().min(1).optional(),
   JWT_SECRET: z.string().min(16).optional(),
