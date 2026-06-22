@@ -6,8 +6,8 @@ import prisma from "./prisma.js";
 
 const googleAuthConfigured = Boolean(
   env.GOOGLE_CLIENT_ID &&
-    env.GOOGLE_CLIENT_SECRET &&
-    env.GOOGLE_CALLBACK_URL
+  env.GOOGLE_CLIENT_SECRET &&
+  env.GOOGLE_CALLBACK_URL
 );
 
 export function isGoogleAuthConfigured() {
@@ -19,7 +19,7 @@ export function configurePassport() {
     console.warn("Google OAuth is not configured. /api/auth/google will return 503.");
     return;
   }
-
+  console.log("GOOGLE_CALLBACK_URL =", env.GOOGLE_CALLBACK_URL);
   passport.use(
     new GoogleStrategy(
       {
