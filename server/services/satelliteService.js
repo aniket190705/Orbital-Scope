@@ -3,6 +3,7 @@ import * as satellite from "satellite.js";
 import env from "../config/env.js";
 import { getCachedValue, setCachedValue } from "../config/redis.js";
 import { DEFAULT_SATELLITE_IDS, normalizeNoradId } from "../utils/defaultSatellites.js";
+import { findFallbackSatellite } from "../utils/fallbackSatellites.js";
 import { createHttpError } from "../utils/httpError.js";
 import { predictSatellitePasses } from "./passPredictor.js";
 
@@ -149,9 +150,22 @@ export async function getSatelliteById(id) {
     return normalizeSatelliteRecord(cachedRecord);
   }
 
-  const satelliteRecord = await fetchTleFromUpstream(normalizedId);
-  await setCachedValue(cacheKey, satelliteRecord, env.REDIS_TTL_SECONDS);
-  return satelliteRecord;
+  try {
+    const satelliteRecord = await fetchTleFromUpstream(normalizedId);
+    await setCachedValue(cacheKey, satelliteRecord, env.REDIS_TTL_SECONDS);
+    return satelliteRecord;
+  } catch (error) {
+    const fallbackSatellite = findFallbackSatellite(normalizedId);
+
+    if (fallbackSatellite) {
+      console.warn(
+        `Falling back to bundled TLE data for NORAD ${normalizedId} after upstream failure.`
+      );
+      return normalizeSatelliteRecord(fallbackSatellite);
+    }
+
+    throw error;
+  }
 }
 
 export async function getDefaultSatellites() {
