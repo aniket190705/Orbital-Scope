@@ -155,7 +155,7 @@ JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRY=24h
 
 # External APIs
-CELESTRAK_BASE_URL=https://celestrak.com/satellite/databases/query/
+CELESTRAK_BASE_URL=https://celestrak.org/NORAD/elements/gp.php
 
 # Port
 PORT=3000
@@ -202,7 +202,7 @@ DATABASE_URL=postgresql://orbitaluser:orbitalpass@db:5432/orbitaltracker
 REDIS_URL=redis://redis:6379
 JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRY=24h
-CELESTRAK_BASE_URL=https://celestrak.com/satellite/databases/query/
+CELESTRAK_BASE_URL=https://celestrak.org/NORAD/elements/gp.php
 PORT=3000
 NODE_ENV=development
 VITE_CESIUM_API_KEY=your_cesium_ion_token_here
@@ -229,7 +229,7 @@ docker-compose exec api npm run migrate
 | `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
 | `JWT_SECRET` | Secret key for signing JWT tokens | `your-secret-key-here` |
 | `JWT_EXPIRY` | JWT expiration time | `24h` |
-| `CELESTRAK_BASE_URL` | Celestrak API endpoint | `https://celestrak.com/satellite/databases/query/` |
+| `CELESTRAK_BASE_URL` | Celestrak API endpoint | `https://celestrak.org/NORAD/elements/gp.php` |
 | `PORT` | Server port | `3000` |
 | `NODE_ENV` | Environment mode | `development` or `production` |
 | `REDIS_TTL_SECONDS` | Cache TTL for TLE data | `3600` |
@@ -356,6 +356,5 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 ## 📞 Support
 
 For issues, questions, or suggestions, please open a GitHub issue or contact the maintainers.
-
 
 

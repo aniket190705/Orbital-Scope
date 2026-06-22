@@ -6,6 +6,18 @@ import { DEFAULT_SATELLITE_IDS, normalizeNoradId } from "../utils/defaultSatelli
 import { createHttpError } from "../utils/httpError.js";
 import { predictSatellitePasses } from "./passPredictor.js";
 
+function buildCelestrakUrl(id) {
+  const configuredBaseUrl = env.CELESTRAK_BASE_URL.trim();
+
+  if (configuredBaseUrl.includes("gp.php")) {
+    return `${configuredBaseUrl}?CATNR=${id}&FORMAT=TLE`;
+  }
+
+  // Fall back to the known working gp.php endpoint if an older docs URL was configured.
+  const fallbackBaseUrl = "https://celestrak.org/NORAD/elements/gp.php";
+  return `${fallbackBaseUrl}?CATNR=${id}&FORMAT=TLE`;
+}
+
 function extractNoradIdFromTle(tle1) {
   const match = tle1.match(/^1\s+(\d+)/);
   return match?.[1] ?? null;
@@ -85,8 +97,7 @@ function parseTleResponse(rawText, requestedId) {
 }
 
 async function fetchTleFromUpstream(id) {
-  const url =
-    `${env.CELESTRAK_BASE_URL}?CATNR=${id}&FORMAT=TLE`;
+  const url = buildCelestrakUrl(id);
 
   console.log(`Fetching TLE: ${url}`);
 
@@ -94,7 +105,7 @@ async function fetchTleFromUpstream(id) {
 
   const timeout = setTimeout(() => {
     controller.abort();
-  }, 30000);
+  }, 8000);
 
   try {
     const response = await fetch(url, {
@@ -144,15 +155,28 @@ export async function getSatelliteById(id) {
 }
 
 export async function getDefaultSatellites() {
-  const satellites = [];
+  const results = await Promise.allSettled(
+    DEFAULT_SATELLITE_IDS.map(async (id) => getSatelliteById(id))
+  );
 
-  for (const id of DEFAULT_SATELLITE_IDS) {
-    try {
-      const satellite = await getSatelliteById(id);
-      satellites.push(satellite);
-    } catch (error) {
-      console.error(`Failed to fetch satellite ${id}:`, error);
+  const satellites = results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(
+        `Failed to fetch satellite ${DEFAULT_SATELLITE_IDS[index]}:`,
+        result.reason
+      );
     }
+  });
+
+  if (satellites.length === 0) {
+    throw createHttpError(
+      502,
+      "Unable to load satellite data from Celestrak. Check CELESTRAK_BASE_URL and backend logs."
+    );
   }
 
   return satellites;
