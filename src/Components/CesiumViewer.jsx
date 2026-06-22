@@ -5,7 +5,6 @@ import {
   createWorldTerrainAsync,
   HeadingPitchRange,
   Math as CesiumMath,
-  TileMapServiceImageryProvider,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
@@ -36,15 +35,8 @@ const CesiumViewer = () => {
 
     const init = async () => {
       const terrain = await createWorldTerrainAsync();
-      const imageryProvider = await TileMapServiceImageryProvider.fromUrl(
-        `${CESIUM_BASE_URL}/Assets/Textures/NaturalEarthII`
-      );
-
       localViewer = new Viewer(viewerRef.current, {
         terrainProvider: terrain,
-        imageryProvider,
-        baseLayerPicker: false,
-        geocoder: false,
         shouldAnimate: true,
       });
 
