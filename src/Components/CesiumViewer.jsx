@@ -5,6 +5,7 @@ import {
   createWorldTerrainAsync,
   HeadingPitchRange,
   Math as CesiumMath,
+  OpenStreetMapImageryProvider,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
@@ -37,6 +38,11 @@ const CesiumViewer = () => {
       const terrain = await createWorldTerrainAsync();
       localViewer = new Viewer(viewerRef.current, {
         terrainProvider: terrain,
+        imageryProvider: new OpenStreetMapImageryProvider({
+          url: "https://tile.openstreetmap.org/",
+        }),
+        baseLayerPicker: false,
+        geocoder: false,
         shouldAnimate: true,
       });
 
