@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import {
   Viewer,
   Ion,
+  buildModuleUrl,
   createWorldTerrainAsync,
   HeadingPitchRange,
   Math as CesiumMath,
-  OpenStreetMapImageryProvider,
+  TileMapServiceImageryProvider,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
@@ -36,11 +37,13 @@ const CesiumViewer = () => {
 
     const init = async () => {
       const terrain = await createWorldTerrainAsync();
+      const imageryProvider = await TileMapServiceImageryProvider.fromUrl(
+        buildModuleUrl("Assets/Textures/NaturalEarthII")
+      );
+
       localViewer = new Viewer(viewerRef.current, {
         terrainProvider: terrain,
-        imageryProvider: new OpenStreetMapImageryProvider({
-          url: "https://tile.openstreetmap.org/",
-        }),
+        imageryProvider,
         baseLayerPicker: false,
         geocoder: false,
         shouldAnimate: true,
