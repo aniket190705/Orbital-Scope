@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Viewer,
   Ion,
-  buildModuleUrl,
   createWorldTerrainAsync,
   HeadingPitchRange,
   Math as CesiumMath,
@@ -38,7 +37,7 @@ const CesiumViewer = () => {
     const init = async () => {
       const terrain = await createWorldTerrainAsync();
       const imageryProvider = await TileMapServiceImageryProvider.fromUrl(
-        buildModuleUrl("Assets/Textures/NaturalEarthII")
+        `${CESIUM_BASE_URL}/Assets/Textures/NaturalEarthII`
       );
 
       localViewer = new Viewer(viewerRef.current, {
